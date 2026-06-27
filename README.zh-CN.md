@@ -4,6 +4,8 @@
 
 界面会根据浏览器或页面语言自动切换英文和简体中文。
 
+[在 Greasy Fork 安装](https://greasyfork.org/zh-CN/scripts/584519-chatgpt-codex-reset-credits-viewer)
+
 ## 截图
 
 | 悬浮入口 | 额度面板 |

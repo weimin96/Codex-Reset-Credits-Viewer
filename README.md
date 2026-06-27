@@ -4,6 +4,8 @@ A userscript for `chatgpt.com` that shows Codex reset credits, the nearest credi
 
 The interface automatically switches between English and Simplified Chinese based on the browser or page language.
 
+[Install on Greasy Fork](https://greasyfork.org/zh-CN/scripts/584519-chatgpt-codex-reset-credits-viewer)
+
 ## Screenshots
 
 | Floating entry | Credits panel |
