@@ -2,13 +2,15 @@
 // @name         ChatGPT Codex Reset Credits Viewer
 // @name:zh-CN   ChatGPT Codex 重置额度查看器
 // @namespace    https://github.com/weimin96/Codex-Reset-Credits-Viewer
-// @version      0.1.0
+// @version      0.1.1
 // @description  View Codex reset credits, expiration time, and usage reset time on chatgpt.com
 // @description:zh-CN 在 chatgpt.com 查看 Codex reset credits、过期时间和使用额度重置时间
 // @match        https://chatgpt.com/*
 // @license      Copyright
 // @homepageURL  https://github.com/weimin96/Codex-Reset-Credits-Viewer
 // @supportURL   https://github.com/weimin96/Codex-Reset-Credits-Viewer/issues
+// @downloadURL  https://update.greasyfork.org/scripts/584519/ChatGPT%20Codex%20Reset%20Credits%20Viewer.user.js
+// @updateURL    https://update.greasyfork.org/scripts/584519/ChatGPT%20Codex%20Reset%20Credits%20Viewer.meta.js
 // @run-at       document-idle
 // @grant        none
 // ==/UserScript==
@@ -17,6 +19,82 @@
   'use strict';
 
   const API_BASE = 'https://chatgpt.com/backend-api';
+
+  const messages = {
+    en: {
+      button: 'Codex Credits',
+      title: 'Codex Reset Credits',
+      refresh: 'Refresh',
+      close: 'Close',
+      ready: 'Ready to query.',
+      loading: 'Querying Codex credits...',
+      noCreditDetails: 'No reset credit details were found.',
+      remaining: (value) => `${value} remaining`,
+      creditId: 'Credit ID',
+      remainingCredits: 'Remaining Reset Credits',
+      availableResets: 'Currently available resets',
+      nearestExpiry: 'Nearest Credit Expiration',
+      nextReset: 'Next Usage Reset',
+      resetDetails: 'Reset Credits Details',
+      status: 'Status',
+      expiresAt: 'Expiration',
+      noResetTime: 'Reset time was not found',
+      noExpiryTime: 'Expiration time was not found',
+      footer: 'Data comes from ChatGPT internal APIs for the current signed-in account. This script only reads data and does not consume reset credits.',
+      queryFailed: (message) => `Query failed: ${message}`,
+      commonReasons: 'Common causes: not signed in, no Codex access on this account, session structure changes, or ChatGPT internal API changes.',
+      sessionFailed: (status) => `/api/auth/session request failed: HTTP ${status}`,
+      missingAccessToken: 'No accessToken was found in the session.',
+      missingAccountId: 'No account id was found in the session.',
+      requestFailed: (path, status) => `${path} request failed: HTTP ${status}`,
+      languageHeader: 'en-US',
+    },
+    zh: {
+      button: 'Codex 额度',
+      title: 'Codex Reset Credits',
+      refresh: '刷新',
+      close: '关闭',
+      ready: '准备查询。',
+      loading: '正在查询 Codex 额度...',
+      noCreditDetails: '没有读取到 reset credit 明细。',
+      remaining: (value) => `剩余 ${value}`,
+      creditId: 'Credit ID',
+      remainingCredits: '剩余 Reset Credits',
+      availableResets: '当前可用重置次数',
+      nearestExpiry: '最近 Credit 过期时间',
+      nextReset: '下次额度重置时间',
+      resetDetails: 'Reset Credits 明细',
+      status: '状态',
+      expiresAt: '过期时间',
+      noResetTime: '未读取到重置时间',
+      noExpiryTime: '未读取到过期时间',
+      footer: '数据来自当前登录账号的 ChatGPT 内部接口。脚本只读取，不会消耗 reset credit。',
+      queryFailed: (message) => `查询失败：${message}`,
+      commonReasons: '常见原因：未登录、账号没有 Codex 权限、session 结构变化，或 ChatGPT 内部接口调整。',
+      sessionFailed: (status) => `/api/auth/session 请求失败：HTTP ${status}`,
+      missingAccessToken: '没有从 session 中读取到 accessToken。',
+      missingAccountId: '没有从 session 中读取到 account id。',
+      requestFailed: (path, status) => `${path} 请求失败：HTTP ${status}`,
+      languageHeader: 'zh-CN',
+    },
+  };
+
+  function detectLanguage() {
+    const values = [
+      document.documentElement.lang,
+      ...Array.from(navigator.languages || []),
+      navigator.language,
+    ].filter(Boolean);
+
+    return values.some((value) => String(value).toLowerCase().startsWith('zh')) ? 'zh' : 'en';
+  }
+
+  const language = detectLanguage();
+
+  function t(key, ...args) {
+    const message = messages[language][key] || messages.en[key] || key;
+    return typeof message === 'function' ? message(...args) : message;
+  }
 
   const css = `
     #codex-usage-btn {
@@ -286,7 +364,7 @@
 
     const btn = document.createElement('button');
     btn.id = 'codex-usage-btn';
-    btn.textContent = 'Codex 额度';
+    btn.textContent = t('button');
     btn.addEventListener('click', openPanel);
 
     const mask = document.createElement('div');
@@ -294,14 +372,14 @@
     mask.innerHTML = `
       <div id="codex-usage-panel">
         <div class="codex-head">
-          <div class="codex-title">Codex Reset Credits</div>
+          <div class="codex-title">${escapeHtml(t('title'))}</div>
           <div class="codex-actions">
-            <button class="codex-small-btn" id="codex-refresh">刷新</button>
-            <button class="codex-small-btn" id="codex-close">关闭</button>
+            <button class="codex-small-btn" id="codex-refresh">${escapeHtml(t('refresh'))}</button>
+            <button class="codex-small-btn" id="codex-close">${escapeHtml(t('close'))}</button>
           </div>
         </div>
         <div class="codex-body" id="codex-usage-content">
-          <div class="codex-loading">准备查询。</div>
+          <div class="codex-loading">${escapeHtml(t('ready'))}</div>
         </div>
       </div>
     `;
@@ -389,9 +467,15 @@
     const h = Math.floor((s % 86400) / 3600);
     const m = Math.floor((s % 3600) / 60);
 
-    if (d > 0) return `${d} 天 ${h} 小时 ${m} 分钟`;
-    if (h > 0) return `${h} 小时 ${m} 分钟`;
-    return `${m} 分钟`;
+    if (language === 'zh') {
+      if (d > 0) return `${d} 天 ${h} 小时 ${m} 分钟`;
+      if (h > 0) return `${h} 小时 ${m} 分钟`;
+      return `${m} 分钟`;
+    }
+
+    if (d > 0) return `${d}d ${h}h ${m}m`;
+    if (h > 0) return `${h}h ${m}m`;
+    return `${m}m`;
   }
 
   function maskId(id) {
@@ -408,7 +492,7 @@
     });
 
     if (!res.ok) {
-      throw new Error(`/api/auth/session 请求失败：HTTP ${res.status}`);
+      throw new Error(t('sessionFailed', res.status));
     }
 
     const data = await res.json();
@@ -420,11 +504,11 @@
       data?.accounts?.[0]?.id;
 
     if (!token) {
-      throw new Error('没有从 session 中读取到 accessToken。');
+      throw new Error(t('missingAccessToken'));
     }
 
     if (!accountId) {
-      throw new Error('没有从 session 中读取到 account id。');
+      throw new Error(t('missingAccountId'));
     }
 
     return { token, accountId };
@@ -437,7 +521,7 @@
       headers: {
         Authorization: `Bearer ${token}`,
         'ChatGPT-Account-Id': accountId,
-        'OAI-Language': 'zh-CN',
+        'OAI-Language': t('languageHeader'),
         originator: 'Codex Desktop',
         'Content-Type': 'application/json',
       },
@@ -453,7 +537,7 @@
     }
 
     if (!res.ok) {
-      throw new Error(`${path} 请求失败：HTTP ${res.status}`);
+      throw new Error(t('requestFailed', path, res.status));
     }
 
     return json;
@@ -590,7 +674,7 @@
           <table class="codex-table">
             <tbody>
               <tr>
-                <td class="codex-muted-row">没有读取到 reset credit 明细。</td>
+                <td class="codex-muted-row">${escapeHtml(t('noCreditDetails'))}</td>
               </tr>
             </tbody>
           </table>
@@ -614,7 +698,7 @@
           </td>
           <td>
             <div>${escapeHtml(formatDateTime(expiresDate))}</div>
-            <div class="codex-sub">${expiresDate ? `剩余 ${escapeHtml(formatDuration((expiresDate.getTime() - Date.now()) / 1000))}` : '-'}</div>
+            <div class="codex-sub">${expiresDate ? escapeHtml(t('remaining', formatDuration((expiresDate.getTime() - Date.now()) / 1000))) : '-'}</div>
           </td>
         </tr>
       `;
@@ -626,9 +710,9 @@
           <thead>
             <tr>
               <th class="idx">#</th>
-              <th>Credit ID</th>
-              <th class="status">状态</th>
-              <th>过期时间</th>
+              <th>${escapeHtml(t('creditId'))}</th>
+              <th class="status">${escapeHtml(t('status'))}</th>
+              <th>${escapeHtml(t('expiresAt'))}</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -658,51 +742,51 @@
       : '-';
 
     const nextResetSub = nextReset
-      ? `剩余 ${formatDuration(nextReset.duration)}`
-      : '未读取到重置时间';
+      ? t('remaining', formatDuration(nextReset.duration))
+      : t('noResetTime');
 
     const nearestExpiryText = nearestExpiry
       ? formatDateTime(nearestExpiry)
       : '-';
 
     const nearestExpirySub = nearestExpiry
-      ? `剩余 ${formatDuration((nearestExpiry.getTime() - Date.now()) / 1000)}`
-      : '未读取到过期时间';
+      ? t('remaining', formatDuration((nearestExpiry.getTime() - Date.now()) / 1000))
+      : t('noExpiryTime');
 
     return `
       <div class="codex-cards">
         <div class="codex-card">
-          <div class="codex-label">剩余 Reset Credits</div>
+          <div class="codex-label">${escapeHtml(t('remainingCredits'))}</div>
           <div class="codex-value">${escapeHtml(remaining)}</div>
-          <div class="codex-sub">当前可用重置次数</div>
+          <div class="codex-sub">${escapeHtml(t('availableResets'))}</div>
         </div>
 
         <div class="codex-card">
-          <div class="codex-label">最近 Credit 过期时间</div>
+          <div class="codex-label">${escapeHtml(t('nearestExpiry'))}</div>
           <div class="codex-value small">${escapeHtml(nearestExpiryText)}</div>
           <div class="codex-sub">${escapeHtml(nearestExpirySub)}</div>
         </div>
 
         <div class="codex-card">
-          <div class="codex-label">下次额度重置时间</div>
+          <div class="codex-label">${escapeHtml(t('nextReset'))}</div>
           <div class="codex-value small">${escapeHtml(nextResetText)}</div>
           <div class="codex-sub">${escapeHtml(nextResetSub)}</div>
         </div>
       </div>
 
       <div class="codex-section">
-        <div class="codex-section-title">Reset Credits 明细</div>
+        <div class="codex-section-title">${escapeHtml(t('resetDetails'))}</div>
         ${renderCreditsTable(credits)}
       </div>
 
       <div class="codex-footer">
-        数据来自当前登录账号的 ChatGPT 内部接口。脚本只读取，不会消耗 reset credit。
+        ${escapeHtml(t('footer'))}
       </div>
     `;
   }
 
   async function loadCodexUsage() {
-    setContent(`<div class="codex-loading">正在查询 Codex 额度……</div>`);
+    setContent(`<div class="codex-loading">${escapeHtml(t('loading'))}</div>`);
 
     try {
       const { token, accountId } = await getSession();
@@ -716,10 +800,10 @@
     } catch (err) {
       setContent(`
         <div class="codex-error">
-          查询失败：${escapeHtml(err?.message || err)}
+          ${escapeHtml(t('queryFailed', err?.message || err))}
         </div>
         <div class="codex-footer">
-          常见原因：未登录、账号没有 Codex 权限、session 结构变化，或 ChatGPT 内部接口调整。
+          ${escapeHtml(t('commonReasons'))}
         </div>
       `);
     }
