@@ -6,6 +6,6 @@ The interface automatically switches between English and Simplified Chinese base
 
 ## Screenshots
 
-![Floating entry](screenshot/1.png)
-
-![Credits panel](screenshot/2.png)
+| Floating entry | Credits panel |
+| --- | --- |
+| ![Floating entry](screenshot/1.png) | ![Credits panel](screenshot/2.png) |

@@ -6,6 +6,6 @@
 
 ## 截图
 
-![悬浮入口](screenshot/1.png)
-
-![额度面板](screenshot/2.png)
+| 悬浮入口 | 额度面板 |
+| --- | --- |
+| ![悬浮入口](screenshot/1.png) | ![额度面板](screenshot/2.png) |

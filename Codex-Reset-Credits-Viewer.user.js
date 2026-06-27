@@ -2,7 +2,7 @@
 // @name         ChatGPT Codex Reset Credits Viewer
 // @name:zh-CN   ChatGPT Codex 重置额度查看器
 // @namespace    https://github.com/weimin96/Codex-Reset-Credits-Viewer
-// @version      0.1.1
+// @version      0.1.2
 // @description  View Codex reset credits, expiration time, and usage reset time on chatgpt.com
 // @description:zh-CN 在 chatgpt.com 查看 Codex reset credits、过期时间和使用额度重置时间
 // @match        https://chatgpt.com/*
@@ -19,6 +19,7 @@
   'use strict';
 
   const API_BASE = 'https://chatgpt.com/backend-api';
+  const LANGUAGE_STORAGE_KEY = 'codex-reset-credits-viewer-language';
 
   const messages = {
     en: {
@@ -26,6 +27,10 @@
       title: 'Codex Reset Credits',
       refresh: 'Refresh',
       close: 'Close',
+      languageSelect: 'Language',
+      languageAuto: 'Auto',
+      languageEnglish: 'English',
+      languageChinese: '中文',
       ready: 'Ready to query.',
       loading: 'Querying Codex credits...',
       noCreditDetails: 'No reset credit details were found.',
@@ -54,6 +59,10 @@
       title: 'Codex Reset Credits',
       refresh: '刷新',
       close: '关闭',
+      languageSelect: '语言',
+      languageAuto: '自动',
+      languageEnglish: 'English',
+      languageChinese: '中文',
       ready: '准备查询。',
       loading: '正在查询 Codex 额度...',
       noCreditDetails: '没有读取到 reset credit 明细。',
@@ -89,7 +98,29 @@
     return values.some((value) => String(value).toLowerCase().startsWith('zh')) ? 'zh' : 'en';
   }
 
-  const language = detectLanguage();
+  function getStoredLanguageMode() {
+    try {
+      const value = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      return ['auto', 'en', 'zh'].includes(value) ? value : 'auto';
+    } catch {
+      return 'auto';
+    }
+  }
+
+  function setStoredLanguageMode(value) {
+    try {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, value);
+    } catch {
+      // Ignore storage failures; the selection still works for the current page.
+    }
+  }
+
+  function resolveLanguage() {
+    return languageMode === 'auto' ? detectLanguage() : languageMode;
+  }
+
+  let languageMode = getStoredLanguageMode();
+  let language = resolveLanguage();
 
   function t(key, ...args) {
     const message = messages[language][key] || messages.en[key] || key;
@@ -160,16 +191,25 @@
       display: flex;
       gap: 8px;
       flex-shrink: 0;
+      align-items: center;
     }
 
-    .codex-small-btn {
+    .codex-small-btn,
+    .codex-lang-select {
       border: 1px solid rgba(255,255,255,.16);
       background: #121a2b;
       color: #e5e7eb;
       padding: 7px 11px;
       border-radius: 9px;
-      cursor: pointer;
       font-size: 12px;
+    }
+
+    .codex-small-btn {
+      cursor: pointer;
+    }
+
+    .codex-lang-select {
+      max-width: 96px;
     }
 
     .codex-small-btn:hover {
@@ -334,6 +374,16 @@
         grid-template-columns: 1fr;
       }
 
+      .codex-head {
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .codex-actions {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
       .codex-table {
         font-size: 12px;
       }
@@ -374,6 +424,11 @@
         <div class="codex-head">
           <div class="codex-title">${escapeHtml(t('title'))}</div>
           <div class="codex-actions">
+            <select class="codex-lang-select" id="codex-language" aria-label="${escapeHtml(t('languageSelect'))}">
+              <option value="auto"${languageMode === 'auto' ? ' selected' : ''}>${escapeHtml(t('languageAuto'))}</option>
+              <option value="en"${languageMode === 'en' ? ' selected' : ''}>${escapeHtml(t('languageEnglish'))}</option>
+              <option value="zh"${languageMode === 'zh' ? ' selected' : ''}>${escapeHtml(t('languageChinese'))}</option>
+            </select>
             <button class="codex-small-btn" id="codex-refresh">${escapeHtml(t('refresh'))}</button>
             <button class="codex-small-btn" id="codex-close">${escapeHtml(t('close'))}</button>
           </div>
@@ -393,6 +448,39 @@
 
     document.getElementById('codex-close').addEventListener('click', closePanel);
     document.getElementById('codex-refresh').addEventListener('click', loadCodexUsage);
+    document.getElementById('codex-language').addEventListener('change', changeLanguage);
+  }
+
+  function changeLanguage(e) {
+    languageMode = e.target.value;
+    language = resolveLanguage();
+    setStoredLanguageMode(languageMode);
+    refreshStaticText();
+
+    const mask = document.getElementById('codex-usage-mask');
+    if (mask?.style.display === 'flex') loadCodexUsage();
+  }
+
+  function refreshStaticText() {
+    const btn = document.getElementById('codex-usage-btn');
+    if (btn) btn.textContent = t('button');
+
+    const title = document.querySelector('.codex-title');
+    if (title) title.textContent = t('title');
+
+    const refresh = document.getElementById('codex-refresh');
+    if (refresh) refresh.textContent = t('refresh');
+
+    const close = document.getElementById('codex-close');
+    if (close) close.textContent = t('close');
+
+    const select = document.getElementById('codex-language');
+    if (select) {
+      select.setAttribute('aria-label', t('languageSelect'));
+      select.options[0].textContent = t('languageAuto');
+      select.options[1].textContent = t('languageEnglish');
+      select.options[2].textContent = t('languageChinese');
+    }
   }
 
   function openPanel() {
