@@ -2,11 +2,11 @@
 // @name         ChatGPT Codex Reset Credits Viewer
 // @name:zh-CN   ChatGPT Codex 重置额度查看器
 // @namespace    https://github.com/weimin96/Codex-Reset-Credits-Viewer
-// @version      0.1.2
+// @version      0.1.3
 // @description  View Codex reset credits, expiration time, and usage reset time on chatgpt.com
 // @description:zh-CN 在 chatgpt.com 查看 Codex reset credits、过期时间和使用额度重置时间
 // @match        https://chatgpt.com/*
-// @license      Copyright
+// @license      MIT
 // @homepageURL  https://github.com/weimin96/Codex-Reset-Credits-Viewer
 // @supportURL   https://github.com/weimin96/Codex-Reset-Credits-Viewer/issues
 // @downloadURL  https://update.greasyfork.org/scripts/584519/ChatGPT%20Codex%20Reset%20Credits%20Viewer.user.js

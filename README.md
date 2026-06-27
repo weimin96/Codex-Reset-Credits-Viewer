@@ -1,7 +1,9 @@
 # ChatGPT Codex Reset Credits Viewer
 
-[![Version](https://img.shields.io/badge/version-0.1.2-blue)](Codex-Reset-Credits-Viewer.user.js)
+[![Version](https://img.shields.io/badge/version-0.1.3-blue)](Codex-Reset-Credits-Viewer.user.js)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Greasy Fork](https://img.shields.io/badge/Greasy%20Fork-install-green)](https://greasyfork.org/zh-CN/scripts/584519-chatgpt-codex-reset-credits-viewer)
+[![GitHub](https://img.shields.io/badge/GitHub-weimin96%2FCodex--Reset--Credits--Viewer-black)](https://github.com/weimin96/Codex-Reset-Credits-Viewer)
 
 English | [简体中文](README.zh-CN.md)
 
